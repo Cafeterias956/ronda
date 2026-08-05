@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ronda de Inspección — Eventos</title>
+<style>
+  :root{
+    --ink:#16181d; --ink-soft:#6b7280; --line:#ececec; --paper:#fafafa; --card:#fff;
+    --gold:#16181d; --gold-soft:#f3f3f4; --ok:#1f9d57; --ok-soft:#e9f6ee;
+    --alarm:#e0322c; --alarm-soft:#fdecec; --warn:#d99409; --warn-soft:#fbf2dd; --pending:#9aa0a8;
+    --shadow:0 1px 2px rgba(16,18,21,.04),0 4px 16px rgba(16,18,21,.06); --r:16px;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.5;padding-bottom:96px;-webkit-font-smoothing:antialiased}
+  .sans{font-family:var(--sans)}
+
+  header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.82);backdrop-filter:saturate(180%) blur(20px);color:var(--ink);padding:16px 20px 13px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-family:var(--sans);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 3px;font-weight:600}
+  header h1{font-size:20px;margin:0;font-weight:600;letter-spacing:-.02em}
+  .clock{font-family:var(--sans);font-size:12px;color:var(--ink-soft);margin-top:3px;font-variant-numeric:tabular-nums}
+  .whoami{font-family:var(--sans);font-size:11px;color:var(--ink-soft);margin-top:2px}
+
+  .progress-wrap{padding:12px 20px 0;background:rgba(255,255,255,.82);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line)}
+  .pbar{height:5px;background:#ededee;border-radius:99px;overflow:hidden}
+  .pbar i{display:block;height:100%;width:0;background:var(--ink);transition:width .4s ease}
+  .pmeta{display:flex;justify-content:space-between;font-family:var(--sans);font-size:11px;color:var(--ink-soft);padding:7px 0 13px}
+
+  main{padding:18px 16px 0;max-width:760px;margin:0 auto}
+
+  .info-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px 18px 8px;margin-bottom:22px}
+  .info-card .label{font-family:var(--sans);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);font-weight:600;margin-bottom:14px}
+  .field{margin-bottom:13px}
+  .field label{display:block;font-family:var(--sans);font-size:12.5px;color:var(--ink-soft);margin-bottom:5px}
+  .field input,.field select{width:100%;font-family:var(--sans);font-size:15px;color:var(--ink);padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:#f7f7f8;transition:all .15s}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--ink);background:#fff;box-shadow:0 0 0 3px rgba(16,18,21,.06)}
+  .grid2{display:flex;gap:10px}.grid2 .field{flex:1}
+
+  .section{margin-bottom:12px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);box-shadow:var(--shadow);overflow:hidden}
+  .sec-head{display:flex;align-items:center;gap:13px;padding:16px 18px;cursor:pointer;background:#fff}
+  .sec-num{font-family:var(--sans);font-weight:600;font-size:13px;color:var(--ink);background:var(--gold-soft);border-radius:9px;min-width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .sec-title{flex:1;font-size:16px;font-weight:600;letter-spacing:-.01em}
+  .sec-status{font-family:var(--sans);font-size:11px;color:var(--ink-soft);text-align:right;line-height:1.3}
+  .sec-status b{display:block;font-size:13px;color:var(--ink)}
+  .chev{transition:transform .25s;color:var(--ink-soft);flex-shrink:0}
+  .section.open .chev{transform:rotate(90deg)}
+  .sec-body{display:none;border-top:1px solid var(--line)}
+  .section.open .sec-body{display:block}
+  .section.locked .sec-head{opacity:.5}
+  .section.locked .chev{display:none}
+
+  .gate{padding:16px;background:#f7f7f8;border-top:1px solid var(--line)}
+  .gate p{font-family:var(--sans);font-size:14px;margin:0 0 10px;color:var(--ink)}
+  .gate-btns{display:flex;gap:10px}
+  .gate-btn{flex:1;font-family:var(--sans);font-size:14px;font-weight:600;padding:11px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--ink-soft)}
+  .gate-btn.yes.active{background:var(--ok);color:#fff;border-color:var(--ok)}
+  .gate-btn.no.active{background:var(--ink-soft);color:#fff;border-color:var(--ink-soft)}
+
+  .subgroup-title{font-family:var(--sans);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);font-weight:600;padding:14px 16px 6px;background:#f7f7f8}
+  .note{font-family:var(--sans);font-size:12px;color:var(--ink-soft);font-style:italic;padding:0 16px 8px;background:#f7f7f8}
+
+  .item{padding:12px 16px;border-top:1px solid #f0f0f1}
+  .item:first-of-type{border-top:none}
+  .item-main{display:flex;align-items:flex-start;gap:12px}
+  .item-text{flex:1}
+  .item-text .name{font-size:15px}
+  .item-text .stamp{font-family:var(--sans);font-size:11px;color:var(--ink-soft);margin-top:3px;font-variant-numeric:tabular-nums;min-height:14px}
+  .item.flagged .stamp{color:var(--alarm)}
+  .item.ok .stamp{color:var(--ok)}
+  .item.warn .stamp{color:var(--warn)}
+  .item.na .stamp{color:var(--ink-soft)}
+
+  .toggle{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:200px}
+  .tbtn{font-family:var(--sans);font-size:12px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--ink-soft);border-radius:10px;padding:9px 0;width:46px;text-align:center;cursor:pointer;transition:all .15s}
+  .tbtn.q{width:62px}
+  .tbtn.ok.active,.tbtn.good.active{background:var(--ok-soft);color:var(--ok);border-color:transparent;box-shadow:inset 0 0 0 1.5px var(--ok)}
+  .tbtn.bad.active,.tbtn.mala.active{background:var(--alarm-soft);color:var(--alarm);border-color:transparent;box-shadow:inset 0 0 0 1.5px var(--alarm)}
+  .tbtn.reg.active{background:var(--warn-soft);color:var(--warn);border-color:transparent;box-shadow:inset 0 0 0 1.5px var(--warn)}
+  .tbtn.na.active{background:var(--gold-soft);color:var(--ink);border-color:transparent;box-shadow:inset 0 0 0 1.5px var(--ink-soft)}
+
+  /* input-type items */
+  .val-input{margin-top:4px}
+  .val-input input{font-family:var(--sans);font-size:15px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#f7f7f8;width:100%;transition:all .15s}
+  .val-input input:focus{outline:none;border-color:var(--ink);background:#fff;box-shadow:0 0 0 3px rgba(16,18,21,.06)}
+  .item-col{display:block}
+  .row-na{display:flex;gap:8px;align-items:center;margin-top:8px}
+  .row-na .tbtn{width:auto;padding:7px 12px}
+
+  .detail{display:none;margin-top:12px;padding:13px;background:var(--alarm-soft);border-radius:12px;border:1px solid transparent}
+  .item.flagged .detail,.item.warn .detail{display:block}
+  .item.warn .detail{background:var(--warn-soft)}
+  .detail label{font-family:var(--sans);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px;color:var(--alarm)}
+  .item.warn .detail label{color:var(--warn)}
+  .detail textarea{width:100%;font-family:var(--sans);font-size:14px;padding:10px;border:1px solid var(--line);border-radius:10px;resize:vertical;min-height:52px;background:#fff}
+  .item.warn .detail textarea{border-color:var(--line)}
+  .detail textarea:focus{outline:none;border-color:var(--ink)}
+
+  .photo-block{margin-top:10px}
+  .photo-block .plabel{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px}
+  .photos{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .photo-thumb{width:60px;height:60px;border-radius:8px;object-fit:cover;border:1px solid var(--line)}
+  .add-photo{width:60px;height:60px;border-radius:8px;border:1.5px dashed var(--gold);background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-family:var(--sans);font-size:10px;color:var(--gold);gap:2px}
+  .photo-wrap{position:relative}
+  .photo-x{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--ink);color:#fff;border:none;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:sans-serif}
+  .req{font-family:var(--sans);font-size:11px;color:var(--alarm);margin-top:6px;display:none}
+  .item.need-photo .req{display:block}
+  .item.need-photo{background:#fdeceb}
+  .add-photo.pulse{animation:pulse 1.2s ease infinite}
+  @keyframes pulse{0%,100%{border-color:var(--gold)}50%{border-color:var(--alarm);background:#fdeceb}}
+
+  .alarms{position:fixed;bottom:84px;left:0;right:0;z-index:60;padding:0 12px;pointer-events:none}
+  .alarm-pill{pointer-events:auto;max-width:736px;margin:0 auto 8px;background:var(--alarm);color:#fff;border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:10px;font-family:var(--sans);font-size:13px;box-shadow:0 8px 28px rgba(187,58,47,.4);animation:slidein .3s ease}
+  @keyframes slidein{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+  .actionbar{position:fixed;bottom:0;left:0;right:0;z-index:70;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--line);padding:13px 16px;display:flex;gap:10px;max-width:760px;margin:0 auto}
+  .btn{flex:1;font-family:var(--sans);font-size:14px;font-weight:600;padding:13px;border-radius:11px;border:none;cursor:pointer;text-align:center}
+  .btn-ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .btn-primary{background:var(--ink);color:#ffffff}
+
+  .overlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(29,35,41,.5);backdrop-filter:blur(2px)}
+  .overlay.show{display:block}
+  .sheet{position:absolute;bottom:0;left:0;right:0;max-height:92vh;overflow-y:auto;background:var(--paper);border-radius:20px 20px 0 0;padding:8px 0 30px;animation:up .3s ease}
+  @keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .grab{width:40px;height:4px;background:var(--line);border-radius:9px;margin:8px auto 4px}
+  .rep-head{padding:8px 20px 16px;border-bottom:1px solid var(--line)}
+  .rep-head h2{font-size:22px;margin:6px 0 2px;font-weight:400}
+  .rep-sub{font-family:var(--sans);font-size:12px;color:var(--ink-soft)}
+  .rep-body{padding:18px 20px}
+  .stat-row{display:flex;gap:10px;margin-bottom:18px}
+  .stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+  .stat .n{font-size:30px;font-weight:400;font-variant-numeric:tabular-nums;line-height:1}
+  .stat .l{font-family:var(--sans);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-top:6px}
+  .stat.ok .n{color:var(--ok)}.stat.bad .n{color:var(--alarm)}.stat.pend .n{color:var(--pending)}
+  .rep-section{font-family:var(--sans);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:600;margin:18px 0 8px}
+  .rep-line{display:flex;align-items:baseline;gap:8px;padding:9px 0;border-bottom:1px solid #f0f0f1;font-family:var(--sans);font-size:13px}
+  .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;align-self:center}
+  .dot.ok{background:var(--ok)}.dot.bad{background:var(--alarm)}.dot.warn{background:var(--warn)}.dot.pend{background:var(--pending)}.dot.na{background:var(--ink-soft)}
+  .rep-line .t{flex:1}
+  .rep-line .when{color:var(--ink-soft);font-size:11px;font-variant-numeric:tabular-nums}
+  .rep-line .issue{display:block;color:var(--alarm);font-size:12px;margin-top:2px;font-style:italic}
+  .empty-good{text-align:center;font-family:var(--sans);color:var(--ok);font-size:13px;padding:14px}
+
+  /* Calificación */
+  .score-hero{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 18px;margin-bottom:18px}
+  .score-ring{width:120px;height:120px;margin:0 auto 10px;position:relative}
+  .score-ring svg{transform:rotate(-90deg)}
+  .score-ring .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .score-ring .num b{font-size:36px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .score-ring .num span{font-family:var(--sans);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px}
+  .verdict{display:inline-block;font-family:var(--sans);font-size:13px;font-weight:700;letter-spacing:.04em;padding:6px 16px;border-radius:99px;text-transform:uppercase}
+  .verdict.bueno{background:var(--ok-soft);color:var(--ok)}
+  .verdict.regular{background:var(--warn-soft);color:var(--warn)}
+  .verdict.malo{background:var(--alarm-soft);color:var(--alarm)}
+  .sec-scores{margin-bottom:6px}
+  .secscore{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f0f0f1}
+  .secscore .nm{flex:1;font-family:var(--sans);font-size:13px}
+  .secscore .track{width:96px;height:7px;background:#ededee;border-radius:99px;overflow:hidden}
+  .secscore .track i{display:block;height:100%;border-radius:99px}
+  .secscore .pct{font-family:var(--sans);font-size:13px;font-weight:700;width:42px;text-align:right;font-variant-numeric:tabular-nums}
+  .elaborated{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);font-family:var(--sans);font-size:12px;color:var(--ink-soft);text-align:center}
+  .elaborated b{display:block;font-size:15px;color:var(--ink);font-family:var(--sans);font-weight:400;margin-top:3px}
+  .rep-tabs{display:flex;gap:8px;margin-bottom:18px;background:#ececec;padding:4px;border-radius:11px}
+  .rep-tab{flex:1;text-align:center;font-family:var(--sans);font-size:13px;font-weight:600;padding:9px;border-radius:8px;cursor:pointer;color:var(--ink-soft)}
+  .rep-tab.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .rep-pane{display:none}.rep-pane.active{display:block}
+
+  /* Galería de evidencia fotográfica */
+  .photo-report-item{border:1px solid var(--line);border-radius:11px;padding:12px 13px;margin-bottom:12px;background:#fff;break-inside:avoid}
+  .pri-head{display:flex;align-items:flex-start;gap:9px;margin-bottom:10px}
+  .pri-text{flex:1}
+  .pri-punto{font-family:var(--sans);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  .pri-name{font-size:14px;margin-top:2px}
+  .pri-when{font-family:var(--sans);font-size:11px;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pri-photos{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .pri-photos img{width:100%;height:180px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+
+  /* Impresión: solo el reporte, con todas las fotos */
+  @media print{
+    @page{margin:1.2cm}
+    body{padding:0;background:#fff}
+    header,.progress-wrap,.actionbar,.edit-fab,.alarms,.info-card,#sections,.toast{display:none !important}
+    .overlay{position:static !important;background:none !important;display:block !important;backdrop-filter:none !important}
+    .overlay:not(#overlay){display:none !important}
+    .sheet{position:static !important;max-height:none !important;box-shadow:none !important;animation:none !important;border-radius:0 !important;overflow:visible !important}
+    .grab,.rep-tabs{display:none !important}
+    .no-print{display:none !important}
+    .rep-pane{display:block !important}
+    /* el botón y avisos interactivos no se imprimen */
+    .rep-pane button,.rep-pane .rep-section + div[style*="background"]{}
+    .photo-report-item{box-shadow:none}
+    .pri-photos img{height:auto !important;max-height:7.5cm}
+    .pri-photos{grid-template-columns:repeat(2,1fr) !important}
+    .photo-report-item,.pri-head{break-inside:avoid;page-break-inside:avoid}
+    #pane2{page-break-before:always}
+    #pane3{page-break-before:always}
+  }
+
+  /* Editor de checklist */
+  .edit-fab{position:fixed;right:16px;bottom:90px;z-index:65;background:var(--ink);color:#fff;border:none;border-radius:99px;padding:12px 17px;font-family:var(--sans);font-size:13px;font-weight:600;box-shadow:0 6px 20px rgba(16,18,21,.22);cursor:pointer;display:flex;align-items:center;gap:7px}
+  .ed-group{margin-bottom:18px}
+  .ed-gtitle{font-family:var(--sans);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:700;margin:14px 0 6px}
+  .ed-sub{font-family:var(--sans);font-size:12px;font-weight:700;color:var(--ink-soft);margin:10px 0 4px}
+  .ed-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fff;border:1px solid var(--line);border-radius:9px;margin-bottom:6px;font-family:var(--sans);font-size:13px}
+  .ed-item .et{flex:1}
+  .ed-item .ek{font-size:10.5px;color:var(--ink-soft);background:#f3f3f4;padding:2px 8px;border-radius:99px;font-weight:600}
+  .ed-del{background:none;border:none;color:var(--alarm);cursor:pointer;font-size:18px;line-height:1;padding:0 4px}
+  .ed-add{background:#fff;border:1px dashed var(--gold);border-radius:10px;padding:12px;margin-top:18px}
+  .ed-add h4{font-family:var(--sans);font-size:13px;margin:0 0 10px;color:var(--gold)}
+  .ed-add .row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+  .ed-add select,.ed-add input{font-family:var(--sans);font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#f7f7f8;flex:1;min-width:120px}
+  .ed-add button{width:100%;background:var(--ink);color:#ffffff;border:none;border-radius:9px;padding:11px;font-family:var(--sans);font-weight:600;cursor:pointer;font-size:14px}
+  .ed-note{font-family:var(--sans);font-size:11.5px;color:var(--ink-soft);font-style:italic;background:#f7f7f8;border-radius:9px;padding:10px 12px;margin-bottom:14px;line-height:1.5}
+
+  /* Selección de opciones */
+  .opts{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+  .opt{font-family:var(--sans);font-size:13px;border:1px solid var(--line);background:#f7f7f8;color:var(--ink-soft);border-radius:9px;padding:8px 13px;cursor:pointer;transition:all .15s}
+  .opt.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .opt-other{margin-top:8px;display:none}
+  .opt-other.show{display:block}
+  .opt-other input{width:100%;font-family:var(--sans);font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#f7f7f8}
+  .opt-other input:focus{outline:none;border-color:var(--gold)}
+
+  /* Bloque de queja destacado */
+  .complaint-banner{background:var(--alarm-soft);border:1px solid transparent;border-radius:11px;padding:12px 14px;margin:10px 16px;font-family:var(--sans);font-size:12.5px;color:var(--alarm);line-height:1.5}
+  .complaint-banner b{display:block;margin-bottom:3px}
+
+  .toast{position:fixed;bottom:160px;left:50%;transform:translateX(-50%);background:var(--ink);color:#ffffff;font-family:var(--sans);font-size:13px;padding:11px 18px;border-radius:99px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;max-width:88%;text-align:center}
+  .toast.show{opacity:1}.toast.warn{background:var(--alarm)}
+
+  .login{position:fixed;inset:0;z-index:300;background:linear-gradient(165deg,#16181d,#2a2c31);display:flex;align-items:center;justify-content:center;padding:24px}
+  .login.hide{display:none}
+  .login-card{width:100%;max-width:360px;background:#fff;border-radius:20px;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  .login-card .eyebrow{color:var(--ink-soft)}
+  .login-card h2{font-size:25px;font-weight:600;letter-spacing:-.02em;margin:4px 0 4px}
+  .login-card .lsub{font-family:var(--sans);font-size:13px;color:var(--ink-soft);margin-bottom:22px}
+  .login-card button{width:100%;background:var(--ink);color:#fff;font-family:var(--sans);font-size:15px;font-weight:600;padding:14px;border:none;border-radius:12px;cursor:pointer;margin-top:6px}
+  .login-demo{font-family:var(--sans);font-size:11px;color:var(--ink-soft);text-align:center;margin-top:16px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<div class="login" id="login">
+  <div class="login-card">
+    <p class="eyebrow">Ronda de inspección</p>
+    <h2>Iniciar sesión</h2>
+    <p class="lsub">Acceso para coordinadores y asesores de evento</p>
+    <div class="field"><label>Usuario</label><input id="l_user" placeholder="tu.usuario" autocapitalize="none"></div>
+    <div class="field"><label>Contraseña</label><input id="l_pass" type="password" placeholder="••••••••"></div>
+    <div class="field"><label>Rol (solo para esta demostración)</label>
+      <select id="l_rol"><option value="coordinador">Coordinador (llena rondas)</option><option value="administrador">Administrador (puede editar preguntas)</option></select>
+    </div>
+    <button onclick="doLogin()">Entrar</button>
+    <p class="login-demo">Demostración: escribe cualquier usuario y contraseña para entrar. El selector de rol es solo para probar; en el sistema real el rol viene de la base de datos y no se elige al entrar.</p>
+  </div>
+</div>
+
+<header>
+  <p class="eyebrow">Ronda de inspección</p>
+  <h1 id="venueTitle">Calidad de evento en sitio</h1>
+  <div class="clock" id="clock">—</div>
+  <div class="whoami" id="whoami"></div>
+</header>
+<div class="progress-wrap">
+  <div class="pbar"><i id="pbarFill"></i></div>
+  <div class="pmeta"><span id="pmetaLeft">0 de 0 revisados</span><span id="pmetaRight">Sin iniciar</span></div>
+</div>
+
+<main>
+  <div class="info-card">
+    <div class="label">Información del evento</div>
+    <div class="grid2">
+      <div class="field"><label>No. de evento</label><input id="f_noevento" placeholder="Ej. EV-1042"></div>
+      <div class="field"><label>Fecha del evento</label><input id="f_fecha" type="date"></div>
+    </div>
+    <div class="field"><label>Nombre del cliente</label><input id="f_cliente" placeholder="Ej. Grupo Hernández"></div>
+    <div class="field"><label>Tipo de evento</label>
+      <select id="f_tipo" onchange="toggleTipoOtro()"><option value="">Selecciona…</option>
+        <option>Boda</option><option>Boda civil</option><option>Shower</option><option>Bautizo</option>
+        <option>XV Años</option><option>Graduación</option><option>Entrega de papeles</option>
+        <option>Fiesta universitaria</option><option>Posada</option><option>Comida / Cena empresarial</option>
+        <option>Conferencia</option><option>Otro</option>
+      </select>
+    </div>
+    <div class="field" id="tipoOtroWrap" style="display:none"><label>Especifica el tipo de evento</label><input id="f_tipo_otro" placeholder="Escribe el tipo de evento"></div>
+    <div class="field"><label>No. de personas</label><input id="f_pax" type="number" inputmode="numeric" placeholder="Ej. 250"></div>
+    <div class="field"><label>Locación</label>
+      <select id="f_loc"><option value="">Selecciona…</option>
+        <option>LDC Maggiore</option><option>LDC Lugano</option><option>LDC Varese</option>
+        <option>Castallia Quinta</option><option>Castallia Jardín Frontal</option><option>Castallia Jardín Central</option>
+        <option>Castallia Salón</option><option>Castallia Mezanine 1</option><option>Castallia Mezanine 2</option>
+      </select>
+    </div>
+    <div class="field"><label>Nombre del asesor</label>
+      <select id="f_asesor"><option value="">Selecciona…</option>
+        <option>Diego Lazzarotto</option><option>Sofía Méndez</option><option>Raquel Ramírez</option>
+        <option>Vero Soto</option><option>Daniela Ríos</option><option>Ivette Ruíz</option>
+        <option>Daniela Mejía</option><option>Andrea González</option><option>Laura Torres</option>
+        <option>Emma Trejo</option><option>Olga Leon</option><option>Natalia Loo</option>
+        <option>Blanca Paola Martínez</option><option>Fernanda López</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="sections"></div>
+</main>
+
+<div class="alarms" id="alarms"></div>
+
+<div class="actionbar">
+  <button class="btn btn-ghost" onclick="saveDraft()">Guardar y salir</button>
+  <button class="btn btn-primary" onclick="openReport()">Ver reporte</button>
+</div>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeReport()">
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="rep-head">
+      <p class="eyebrow" style="color:var(--gold)">Reporte de ronda</p>
+      <h2 id="repClient">—</h2>
+      <div class="rep-sub" id="repMeta">—</div>
+    </div>
+    <div class="rep-body" id="repBody"></div>
+  </div>
+</div>
+
+<button class="edit-fab" id="reportsFab" onclick="openReportsSearch()" style="display:none;bottom:138px;background:var(--ink)">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-4.3-4.3M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z"/></svg>
+  Reportes anteriores
+</button>
+<button class="edit-fab" id="editFab" onclick="openEditor()" style="display:none;background:#fff;color:var(--ink);box-shadow:0 6px 20px rgba(16,18,21,.12),inset 0 0 0 1px var(--line)">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+  Editar preguntas
+</button>
+
+<div class="overlay" id="edOverlay" onclick="if(event.target===this)closeEditor()">
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="rep-head">
+      <p class="eyebrow" style="color:var(--gold)">Editor de checklist</p>
+      <h2>Agregar o quitar preguntas</h2>
+      <div class="rep-sub">Los cambios se aplican al instante en esta demostración</div>
+    </div>
+    <div class="rep-body" id="edBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="rsOverlay" onclick="if(event.target===this)closeReportsSearch()">
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="rep-head">
+      <p class="eyebrow" style="color:var(--gold)">Reportes anteriores</p>
+      <h2>Buscar evento</h2>
+      <div class="rep-sub">Busca por cliente, No. de evento, venue o asesor</div>
+    </div>
+    <div class="rep-body">
+      <input type="text" id="rsBox" placeholder="Escribe para buscar…" oninput="runReportsSearch()" style="width:100%;font-family:var(--sans);font-size:15px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#f7f7f8;margin-bottom:14px">
+      <div id="rsResults"></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="rfOverlay" onclick="if(event.target===this)closeFullReport()">
+  <div class="sheet" id="rfSheet"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== Tipos de punto =====
+   yesno   : Sí / No        -> No abre descripción + alarma
+   quality : Buena/Reg/Mala -> Regular abre descripción; Mala abre descripción + alarma
+   count   : número
+   text    : texto libre
+   time    : hora
+   Foto obligatoria solo en yesno y quality. count/text/time no requieren foto.
+*/
+const CHECKLIST = [
+  { id:"infra", title:"Infraestructura", groups:[
+    { name:"Estacionamiento", items:[ {t:"Limpieza",k:"quality"},{t:"Iluminación",k:"quality"} ]},
+    { name:"Accesos", items:[ {t:"Limpieza",k:"quality"},{t:"Iluminación",k:"quality"} ]},
+    { name:"Jardines", items:[ {t:"Limpieza",k:"quality"},{t:"Jardines recién cortados",k:"yesno"},{t:"Fuentes encendidas",k:"yesno"},{t:"Limpieza de fuentes",k:"quality"} ]},
+    { name:"Baño Hombres", items:[ {t:"Pisos limpios",k:"quality"},{t:"Sanitarios limpios",k:"quality"},{t:"Espejos limpios",k:"quality"},{t:"Lavabos limpios",k:"quality"},{t:"Papel higiénico",k:"yesno"},{t:"Sanitas para lavamanos",k:"yesno"},{t:"Kit de baño para invitados",k:"yesno"} ]},
+    { name:"Baño Mujeres", items:[ {t:"Pisos limpios",k:"quality"},{t:"Sanitarios limpios",k:"quality"},{t:"Espejos limpios",k:"quality"},{t:"Lavabos limpios",k:"quality"},{t:"Papel higiénico",k:"yesno"},{t:"Sanitas para lavamanos",k:"yesno"},{t:"Kit de baño para invitados",k:"yesno"} ]},
+    { name:"Venue", items:[ {t:"Vidrios limpios",k:"quality"},{t:"Carpa limpia",k:"quality"},{t:"Telas limpias",k:"quality"},{t:"Pisos / alfombra limpia y en buen estado",k:"quality"},{t:"Extintores (cantidad — foto de todos para Protección Civil)",k:"count",reqPhoto:true} ]},
+  ]},
+  { id:"evento", title:"Evento", groups:[
+    { name:"Montaje", items:[
+      {t:"Montaje coincide con layout en cédula",k:"yesno"},
+      {t:"Mobiliario coincide con cédula",k:"yesno"},
+      {t:"Decoración coincide con cédula",k:"yesno"},
+      {t:"Calidad del mobiliario — mesas",k:"quality"},
+      {t:"Calidad del mobiliario — sillas",k:"quality"},
+      {t:"Calidad del mobiliario — mantelería",k:"quality"},
+      {t:"Calidad del mobiliario — pista de baile",k:"quality"},
+      {t:"Calidad del mobiliario — barra interior",k:"quality"},
+      {t:"Cubierto",k:"yesno"},
+      {t:"Platos base",k:"yesno"},
+      {t:"Copa de vino",k:"yesno"},
+      {t:"Copa de agua (con agua)",k:"yesno"},
+      {t:"Servilleta",k:"yesno"},
+      {t:"Menús",k:"yesno"},
+      {t:"Centro de mesa",k:"yesno"},
+      {t:"Mesa de apoyo para licor (graduaciones)",k:"yesno"},
+      {t:"Múcura para hielo (graduaciones)",k:"yesno"},
+      {t:"Pinzas para hielo (graduaciones)",k:"yesno"},
+    ]},
+    { name:"Personal", items:[
+      {t:"Meseros",k:"count"},
+      {t:"Presentación meseros",k:"quality"},
+      {t:"Hostess",k:"count"},
+      {t:"Presentación hostess",k:"quality"},
+      {t:"Doncella de baño",k:"count"},
+      {t:"Presentación doncella de baño",k:"quality"},
+      {t:"Guardia de seguridad",k:"count"},
+      {t:"Presentación guardia de seguridad",k:"quality"},
+    ]},
+    { name:"Iluminación y sonorización", items:[ {t:"Iluminación y sonorización funcionando",k:"yesno"} ]},
+  ]},
+  { id:"banquete", title:"Banquete", gated:true, gateLabel:"¿El evento lleva banquete?", groups:[
+    { name:"Entrada", items:[
+      {t:"Nombre de la entrada",k:"text"},
+      {t:"Presentación",k:"quality"},
+      {t:"Temperatura",k:"quality"},
+      {t:"Sabor",k:"quality"},
+      {t:"Corresponde a lo que venía en cédula",k:"yesno"},
+    ]},
+    { name:"Plato fuerte", items:[
+      {t:"Nombre del plato fuerte",k:"text"},
+      {t:"Presentación",k:"quality"},
+      {t:"Temperatura",k:"quality"},
+      {t:"Sabor",k:"quality"},
+      {t:"Corresponde a lo que venía en cédula",k:"yesno"},
+    ]},
+    { name:"Postre", items:[
+      {t:"Nombre del postre",k:"text"},
+      {t:"Presentación",k:"quality"},
+      {t:"Temperatura",k:"quality"},
+      {t:"Sabor",k:"quality"},
+      {t:"Corresponde a lo que venía en cédula",k:"yesno"},
+    ]},
+    { name:"Servicio", items:[
+      {t:"Hora inicio del servicio",k:"time"},
+      {t:"Hora término del servicio",k:"time"},
+      {t:"¿Hubo incidentes durante el servicio?",k:"yesno"},
+    ]},
+  ]},
+  { id:"queja", title:"Queja de cliente", gated:true, gateLabel:"¿Quieres reportar una queja de cliente?", complaint:true, groups:[
+    { name:"Datos de la queja", items:[
+      {t:"Nombre de la persona de la queja",k:"text"},
+      {t:"Rol en el evento",k:"select",options:["Invitado","Cliente que contrata","Familiar del contratante","Otro"]},
+      {t:"Tipo de queja",k:"select_other",options:["Servicio","Alimentos","Limpieza","Decoración","Otro"]},
+      {t:"Descripción de la queja",k:"text"},
+    ]},
+  ]},
+  { id:"encuesta", title:"Encuesta de satisfacción", gated:true, gateLabel:"¿El cliente está disponible para contestar la encuesta?", survey:true, groups:[
+    { name:"Calificación del cliente que contrató", note:"Aplicar al cliente que contrató. Califica cada aspecto: Buena, Regular o Mala.", items:[
+      {t:"Instalaciones",k:"quality",noPhoto:true},
+      {t:"Limpieza",k:"quality",noPhoto:true},
+      {t:"Producción del evento",k:"quality",noPhoto:true},
+      {t:"Calidad del servicio",k:"quality",noPhoto:true},
+      {t:"Calidad de los alimentos",k:"quality",noPhoto:true},
+      {t:"Comentarios del cliente (opcional)",k:"text"},
+    ]},
+  ]},
+];
+
+const QLABELS={good:"Buena",reg:"Regular",mala:"Mala"};
+
+/* ===== Estado ===== */
+const state={};
+function keyOf(s,g,i){return `${s}__${g}__${i}`}
+
+/* ===== Reloj ===== */
+function fmtTime(d){return d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})}
+function fmtShort(d){return d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',hour12:true})}
+setInterval(()=>{document.getElementById('clock').textContent=fmtTime(new Date())},1000);
+document.getElementById('clock').textContent=fmtTime(new Date());
+
+/* ===== Render ===== */
+const sectionsEl=document.getElementById('sections');
+function renderAllSections(){
+  sectionsEl.innerHTML='';
+  CHECKLIST.forEach((sec,si)=>{
+  const section=document.createElement('div');
+  section.className='section'+(sec.gated?' locked':'');
+  section.id='sec_'+sec.id;
+  section.innerHTML=`
+    <div class="sec-head" onclick="toggleSec('${sec.id}')">
+      <div class="sec-num">${si+1}</div>
+      <div class="sec-title">${sec.title}</div>
+      <div class="sec-status" id="status_${sec.id}"><b>0/0</b>revisados</div>
+      <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+    </div>
+    <div class="sec-body" id="body_${sec.id}"></div>`;
+  sectionsEl.appendChild(section);
+  const body=section.querySelector('.sec-body');
+
+  if(sec.gated){
+    const gate=document.createElement('div');gate.className='gate';gate.id='gate_'+sec.id;
+    gate.innerHTML=`<p>${sec.gateLabel}</p>
+      <div class="gate-btns">
+        <button class="gate-btn yes" onclick="setGate('${sec.id}',true)">Sí</button>
+        <button class="gate-btn no" onclick="setGate('${sec.id}',false)">No</button>
+      </div>`;
+    body.appendChild(gate);
+    const wrap=document.createElement('div');wrap.id='gatewrap_'+sec.id;wrap.style.display='none';
+    body.appendChild(wrap);
+    renderGroups(sec,wrap);
+  } else {
+    renderGroups(sec,body);
+  }
+  });
+  refresh();
+}
+
+function renderGroups(sec,container){
+  sec.groups.forEach((g,gi)=>{
+    const gt=document.createElement('div');gt.className='subgroup-title';gt.textContent=g.name;container.appendChild(gt);
+    if(g.note){const n=document.createElement('div');n.className='note';n.textContent=g.note;container.appendChild(n)}
+    g.items.forEach((it,ii)=>{
+      const k=keyOf(sec.id,gi,ii);
+      if(!state[k]) state[k]={kind:it.k,reqPhoto:!!it.reqPhoto,noPhoto:!!it.noPhoto,status:null,value:'',ts:null,issue:'',photos:[]};
+      else state[k].kind=it.k; // mantener respuestas previas, actualizar tipo
+      const row=document.createElement('div');row.className='item';row.id='row_'+k;
+      row.appendChild(buildRow(k,it));
+      container.appendChild(row);
+      // re-pintar estado visual si ya había respuesta
+      if(state[k].status && state[k].status!=='filled') restoreVisual(k,it);
+      else if(state[k].status==='filled') restoreValue(k);
+    });
+  });
+}
+
+function photoBlock(k){
+  return `<div class="photo-block" id="pblock_${k}">
+      <div class="plabel">Evidencia fotográfica</div>
+      <div class="photos" id="photos_${k}">
+        <label class="add-photo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>
+          Foto
+          <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto('${k}',this)">
+        </label>
+      </div>
+      <div class="req">Toma una foto para poder marcar este punto. Si no aplica, usa "N/A".</div>
+    </div>`;
+}
+function detailBlock(k){
+  return `<div class="detail">
+      <label>¿Qué pasó? (se registra y, si aplica, se envía al supervisor)</label>
+      <textarea id="issue_${k}" placeholder="Describe el detalle…" oninput="state['${k}'].issue=this.value"></textarea>
+    </div>`;
+}
+
+function buildRow(k,it){
+  const wrap=document.createElement('div');wrap.className='item-col';
+  if(it.k==='yesno'){
+    wrap.innerHTML=`
+      <div class="item-main">
+        <div class="item-text"><div class="name">${it.t}</div><div class="stamp" id="stamp_${k}"></div></div>
+        <div class="toggle">
+          <button class="tbtn ok" onclick="mark('${k}','ok')">Sí</button>
+          <button class="tbtn bad" onclick="mark('${k}','bad')">No</button>
+          <button class="tbtn na" onclick="mark('${k}','na')">N/A</button>
+        </div>
+      </div>${detailBlock(k)}${photoBlock(k)}`;
+  } else if(it.k==='quality'){
+    wrap.innerHTML=`
+      <div class="item-main">
+        <div class="item-text"><div class="name">${it.t}</div><div class="stamp" id="stamp_${k}"></div></div>
+        <div class="toggle">
+          <button class="tbtn good q" onclick="mark('${k}','good')">Buena</button>
+          <button class="tbtn reg q" onclick="mark('${k}','reg')">Regular</button>
+          <button class="tbtn mala q" onclick="mark('${k}','mala')">Mala</button>
+          ${it.noPhoto?'':`<button class="tbtn na" onclick="mark('${k}','na')">N/A</button>`}
+        </div>
+      </div>${detailBlock(k)}${it.noPhoto?'':photoBlock(k)}`;
+  } else if(it.k==='count'){
+    wrap.innerHTML=`
+      <div class="item-text"><div class="name">${it.t}</div></div>
+      <div class="val-input"><input type="number" inputmode="numeric" placeholder="Cantidad" oninput="setValue('${k}',this.value)"></div>
+      <div class="stamp" id="stamp_${k}" style="margin-top:6px"></div>
+      ${it.reqPhoto?photoBlock(k):''}`;
+  } else if(it.k==='text'){
+    wrap.innerHTML=`
+      <div class="item-text"><div class="name">${it.t}</div></div>
+      <div class="val-input"><input type="text" placeholder="Escribe aquí…" oninput="setValue('${k}',this.value)"></div>
+      <div class="stamp" id="stamp_${k}" style="margin-top:6px"></div>`;
+  } else if(it.k==='time'){
+    wrap.innerHTML=`
+      <div class="item-text"><div class="name">${it.t}</div></div>
+      <div class="val-input"><input type="time" onchange="setValue('${k}',this.value)"></div>
+      <div class="stamp" id="stamp_${k}" style="margin-top:6px"></div>`;
+  } else if(it.k==='select'||it.k==='select_other'){
+    const opts=(it.options||[]).map(o=>`<button class="opt" onclick="selectOpt('${k}','${o.replace(/'/g,"\\'")}',this)">${o}</button>`).join('');
+    wrap.innerHTML=`
+      <div class="item-text"><div class="name">${it.t}</div><div class="stamp" id="stamp_${k}"></div></div>
+      <div class="opts">${opts}</div>
+      ${it.k==='select_other'?`<div class="opt-other" id="other_${k}"><input type="text" placeholder="Especifica cuál…" oninput="setOther('${k}',this.value)"></div>`:''}`;
+  }
+  return wrap;
+}
+renderAllSections();
+
+/* ===== Gate (Banquete / Queja) ===== */
+function setGate(secId,yes){
+  const sec=document.getElementById('sec_'+secId);
+  const gate=document.getElementById('gate_'+secId);
+  const wrap=document.getElementById('gatewrap_'+secId);
+  gate.querySelector('.gate-btn.yes').classList.toggle('active',yes);
+  gate.querySelector('.gate-btn.no').classList.toggle('active',!yes);
+  sec.dataset.gate = yes?'yes':'no';
+  wrap.style.display = yes?'block':'none';
+  // si es la sección de queja y se activa, mostrar banner de escalamiento + alarma
+  const secDef=CHECKLIST.find(s=>s.id===secId);
+  if(secDef && secDef.complaint){
+    let banner=document.getElementById('complaintBanner');
+    if(yes && !banner){
+      banner=document.createElement('div');banner.id='complaintBanner';banner.className='complaint-banner';
+      banner.innerHTML=`<b>⚠ Queja de cliente — escalamiento inmediato</b>Al reportar esta queja se notificará de inmediato por WhatsApp y correo a: gerente del venue, gerente de operaciones, gerente de ventas y dirección comercial.`;
+      wrap.insertBefore(banner,wrap.firstChild);
+      fireComplaintAlarm();
+    } else if(!yes && banner){banner.remove()}
+  }
+  refresh();
+}
+function fireComplaintAlarm(){
+  const wrap=document.getElementById('alarms');
+  const pill=document.createElement('div');pill.className='alarm-pill';pill.style.background='#b3261e';
+  pill.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0z"/></svg>
+    <div style="flex:1"><b>Queja escalada</b><br>Notificando a gerencia de venue, operaciones, ventas y dirección comercial</div>`;
+  wrap.appendChild(pill);
+  setTimeout(()=>{pill.style.transition='opacity .4s';pill.style.opacity='0';setTimeout(()=>pill.remove(),400)},4500);
+}
+function toggleSec(secId){
+  const sec=document.getElementById('sec_'+secId);
+  if(sec.classList.contains('locked')) sec.classList.remove('locked'); // permite abrir para ver el gate
+  sec.classList.toggle('open');
+}
+
+/* ===== Marcar (yesno / quality) ===== */
+function mark(k,val){
+  const s=state[k];const row=document.getElementById('row_'+k);const stamp=document.getElementById('stamp_'+k);
+  const needsPhoto=(s.kind==='yesno'||s.kind==='quality') && !s.noPhoto;
+  const photoExempt=(val==='na');
+  if(needsPhoto && !photoExempt && s.photos.length===0 && s.status!==val){
+    row.classList.add('need-photo');
+    const adder=row.querySelector('.add-photo');adder.classList.add('pulse');setTimeout(()=>adder.classList.remove('pulse'),3600);
+    toast('Toma una foto antes de marcar. Si no aplica, usa N/A.',true);
+    return;
+  }
+  s.status=(s.status===val)?null:val;
+  s.ts=s.status?new Date().toISOString():null;
+  row.classList.remove('ok','flagged','warn','na','need-photo');
+  row.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('active'));
+  if(!s.status){stamp.textContent='';refresh();return}
+  row.querySelector('.tbtn.'+val).classList.add('active');
+  const t=fmtShort(new Date(s.ts));
+  const isSurvey = k.indexOf('encuesta__')===0;
+  if(val==='ok'||val==='good'){row.classList.add('ok');stamp.textContent=(val==='ok'?'✓ OK · ':'✓ Buena · ')+t}
+  else if(val==='reg'){row.classList.add('warn');stamp.textContent='● Regular · '+t; if(isSurvey)fireSurveyAlarm(k)}
+  else if(val==='na'){row.classList.add('na');stamp.textContent='— No aplica · '+t}
+  else if(val==='bad'||val==='mala'){row.classList.add('flagged');stamp.textContent=(val==='mala'?'⚠ Mala · ':'⚠ Problema · ')+t; if(isSurvey)fireSurveyAlarm(k);else fireAlarm(k)}
+  refresh();
+}
+function fireSurveyAlarm(k){
+  const p=k.split('__');const sec=CHECKLIST.find(s=>s.id===p[0]);
+  const item=sec.groups[p[1]].items[p[2]];
+  const wrap=document.getElementById('alarms');
+  const pill=document.createElement('div');pill.className='alarm-pill';pill.style.background='#b3261e';
+  pill.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0z"/></svg>
+    <div style="flex:1"><b>Encuesta — escalada</b><br>${item.t}: notificando a gerencia de venue, operaciones, ventas y dirección comercial</div>`;
+  wrap.appendChild(pill);
+  setTimeout(()=>{pill.style.transition='opacity .4s';pill.style.opacity='0';setTimeout(()=>pill.remove(),400)},4500);
+}
+
+/* ===== Valores (count/text/time) ===== */
+function setValue(k,v){
+  const s=state[k];
+  const row=document.getElementById('row_'+k);
+  if(s.reqPhoto && v!=='' && v!=null && s.photos.length===0){
+    row.classList.add('need-photo');
+    const adder=row.querySelector('.add-photo');if(adder){adder.classList.add('pulse');setTimeout(()=>adder.classList.remove('pulse'),3600)}
+    toast('Toma la foto de evidencia antes de registrar la cantidad.',true);
+    // mantener el valor escrito pero no marcar como registrado aún
+    s.value=v;s.status=null;s.ts=null;
+    document.getElementById('stamp_'+k).textContent='Falta foto de evidencia';
+    document.getElementById('stamp_'+k).style.color='var(--alarm)';
+    refresh();return;
+  }
+  s.value=v;
+  if(v!==''&&v!=null){if(!s.ts)s.ts=new Date().toISOString();s.status='filled';row.classList.remove('need-photo')}
+  else{s.status=null;s.ts=null}
+  const stamp=document.getElementById('stamp_'+k);
+  stamp.textContent = s.status ? ('Registrado · '+fmtShort(new Date(s.ts))) : '';
+  stamp.style.color='var(--ink-soft)';
+  refresh();
+}
+
+/* ===== Selección de opciones ===== */
+function selectOpt(k,opt,btn){
+  const s=state[k];
+  const row=document.getElementById('row_'+k);
+  row.querySelectorAll('.opt').forEach(b=>b.classList.remove('active'));
+  if(s.value===opt){s.value='';s.status=null;s.ts=null}
+  else{btn.classList.add('active');s.value=opt;s.status='filled';s.ts=new Date().toISOString()}
+  // mostrar campo "otro" si aplica
+  const other=document.getElementById('other_'+k);
+  if(other){other.classList.toggle('show', opt==='Otro' && s.value==='Otro')}
+  const stamp=document.getElementById('stamp_'+k);
+  stamp.textContent=s.status?('Registrado · '+fmtShort(new Date(s.ts))):'';
+  stamp.style.color='var(--ink-soft)';
+  refresh();
+}
+function setOther(k,v){state[k].other=v}
+
+
+function addPhoto(k,input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    state[k].photos.push(e.target.result);renderPhotos(k);
+    const row=document.getElementById('row_'+k);row.classList.remove('need-photo');
+    // si es un count con foto requerida y ya hay valor escrito, registrarlo ahora
+    const s=state[k];
+    if(s.kind==='count' && s.reqPhoto && s.value!=='' && s.value!=null){setValue(k,s.value)}
+  };
+  reader.readAsDataURL(file);input.value='';
+}
+function renderPhotos(k){
+  const c=document.getElementById('photos_'+k);
+  c.querySelectorAll('.photo-wrap').forEach(w=>w.remove());
+  state[k].photos.forEach((src,idx)=>{
+    const w=document.createElement('div');w.className='photo-wrap';
+    w.innerHTML=`<img class="photo-thumb" src="${src}"><button class="photo-x" onclick="rmPhoto('${k}',${idx})">×</button>`;
+    c.insertBefore(w,c.firstChild);
+  });
+}
+function rmPhoto(k,idx){state[k].photos.splice(idx,1);renderPhotos(k)}
+
+/* ===== Alarmas ===== */
+function fireAlarm(k){
+  const p=k.split('__');const sec=CHECKLIST.find(s=>s.id===p[0]);
+  const g=sec.groups[p[1]];const item=g.items[p[2]];
+  const wrap=document.getElementById('alarms');
+  const pill=document.createElement('div');pill.className='alarm-pill';
+  pill.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0z"/></svg>
+    <div style="flex:1"><b>Alarma enviada a supervisor</b><br>${g.name} · ${item.t}</div>`;
+  wrap.appendChild(pill);
+  setTimeout(()=>{pill.style.transition='opacity .4s';pill.style.opacity='0';setTimeout(()=>pill.remove(),400)},3800);
+}
+
+/* ===== Progreso ===== */
+function isActive(sec){return !sec.gated || document.getElementById('sec_'+sec.id).dataset.gate==='yes'}
+function refresh(){
+  let total=0,done=0,issues=0;
+  CHECKLIST.forEach(sec=>{
+    let st=0,sd=0;const active=isActive(sec);
+    sec.groups.forEach((g,gi)=>g.items.forEach((it,ii)=>{
+      const s=state[keyOf(sec.id,gi,ii)];
+      if(active){total++;st++}
+      if(s.status){if(active){done++;sd++}if(s.status==='bad'||s.status==='mala')issues++}
+    }));
+    const el=document.getElementById('status_'+sec.id);
+    if(sec.gated && document.getElementById('sec_'+sec.id).dataset.gate!=='yes'){
+      el.innerHTML = document.getElementById('sec_'+sec.id).dataset.gate==='no' ? `<b>—</b>sin banquete` : `<b>?</b>por definir`;
+    } else { el.innerHTML=`<b>${sd}/${st}</b>revisados`; }
+  });
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('pbarFill').style.width=pct+'%';
+  document.getElementById('pmetaLeft').textContent=`${done} de ${total} revisados`;
+  document.getElementById('pmetaRight').textContent = issues>0 ? `${issues} ${issues===1?'problema':'problemas'}` : (done===total&&total>0?'Ronda completa':'En progreso');
+}
+refresh();
+
+/* ===== Borrador ===== */
+function saveDraft(){toast('Borrador guardado · '+fmtShort(new Date())+'. Puedes retomar después.')}
+function toast(msg,warn){const t=document.getElementById('toast');t.textContent=msg;t.classList.toggle('warn',!!warn);t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800)}
+
+function restoreVisual(k,it){
+  const s=state[k];const row=document.getElementById('row_'+k);const stamp=document.getElementById('stamp_'+k);
+  if(!row||!s.status)return;
+  const btn=row.querySelector('.tbtn.'+s.status);if(btn)btn.classList.add('active');
+  const t=fmtShort(new Date(s.ts));
+  if(s.status==='ok'||s.status==='good'){row.classList.add('ok');stamp.textContent=(s.status==='ok'?'✓ OK · ':'✓ Buena · ')+t}
+  else if(s.status==='reg'){row.classList.add('warn');stamp.textContent='● Regular · '+t}
+  else if(s.status==='na'){row.classList.add('na');stamp.textContent='— No aplica · '+t}
+  else if(s.status==='bad'||s.status==='mala'){row.classList.add('flagged');stamp.textContent=(s.status==='mala'?'⚠ Mala · ':'⚠ Problema · ')+t}
+  if(s.issue){const ta=document.getElementById('issue_'+k);if(ta)ta.value=s.issue}
+  if(s.photos.length)renderPhotos(k);
+}
+function restoreValue(k){
+  const s=state[k];const row=document.getElementById('row_'+k);if(!row)return;
+  const inp=row.querySelector('.val-input input');if(inp)inp.value=s.value;
+  // selects
+  const optBtns=row.querySelectorAll('.opt');
+  if(optBtns.length){optBtns.forEach(b=>{if(b.textContent===s.value)b.classList.add('active')});
+    const other=document.getElementById('other_'+k);
+    if(other && s.value==='Otro'){other.classList.add('show');const oi=other.querySelector('input');if(oi&&s.other)oi.value=s.other}
+  }
+  const stamp=document.getElementById('stamp_'+k);if(stamp){stamp.textContent='Registrado · '+fmtShort(new Date(s.ts));stamp.style.color='var(--ink-soft)'}
+  if(s.photos.length)renderPhotos(k);
+}
+
+/* ===== Editor de checklist (demo de administración) ===== */
+const KIND_LABELS={yesno:"Sí/No",quality:"Calidad",count:"Cantidad",text:"Texto",time:"Hora",select:"Opciones",select_other:"Opciones+otro"};
+function openEditor(){
+  if(currentRole!=='administrador'){toast('Solo un administrador puede editar las preguntas',true);return}
+  renderEditor();document.getElementById('edOverlay').classList.add('show');
+}
+function closeEditor(){document.getElementById('edOverlay').classList.remove('show')}
+function renderEditor(){
+  let html=`<div class="ed-note">Aquí puedes <b>agregar</b> o <b>quitar</b> preguntas para ver cómo funcionaría la administración del checklist. En el sistema real, estos cambios se guardan en la base de datos y se aplican para todo el equipo sin tocar código. Los eventos ya auditados conservan sus preguntas originales.</div>`;
+  CHECKLIST.forEach((sec,si)=>{
+    html+=`<div class="ed-group"><div class="ed-gtitle">${sec.title}</div>`;
+    sec.groups.forEach((g,gi)=>{
+      html+=`<div class="ed-sub">${g.name}</div>`;
+      g.items.forEach((it,ii)=>{
+        html+=`<div class="ed-item"><div class="et">${it.t}</div><span class="ek">${KIND_LABELS[it.k]||it.k}</span><button class="ed-del" title="Quitar" onclick="delItem(${si},${gi},${ii})">×</button></div>`;
+      });
+    });
+    html+=`</div>`;
+  });
+  // formulario para agregar
+  const secOpts=CHECKLIST.map((s,i)=>`<option value="${i}">${s.title}</option>`).join('');
+  html+=`<div class="ed-add">
+    <h4>Agregar nueva pregunta</h4>
+    <div class="row">
+      <select id="ed_sec" onchange="syncSubgroups()">${secOpts}</select>
+      <select id="ed_grp"></select>
+    </div>
+    <div class="row">
+      <input id="ed_text" type="text" placeholder="Texto de la pregunta">
+      <select id="ed_kind">
+        <option value="yesno">Sí/No</option><option value="quality">Calidad (buena/regular/mala)</option>
+        <option value="count">Cantidad</option><option value="text">Texto</option><option value="time">Hora</option>
+      </select>
+    </div>
+    <button onclick="addItem()">Agregar pregunta</button>
+  </div>`;
+  document.getElementById('edBody').innerHTML=html;
+  syncSubgroups();
+}
+function syncSubgroups(){
+  const si=+document.getElementById('ed_sec').value;
+  const grp=document.getElementById('ed_grp');
+  grp.innerHTML=CHECKLIST[si].groups.map((g,i)=>`<option value="${i}">${g.name}</option>`).join('');
+}
+function delItem(si,gi,ii){
+  CHECKLIST[si].groups[gi].items.splice(ii,1);
+  rebuildState();renderEditor();renderAllSections();
+  toast('Pregunta eliminada');
+}
+function addItem(){
+  const si=+document.getElementById('ed_sec').value;
+  const gi=+document.getElementById('ed_grp').value;
+  const text=document.getElementById('ed_text').value.trim();
+  const kind=document.getElementById('ed_kind').value;
+  if(!text){toast('Escribe el texto de la pregunta',true);return}
+  CHECKLIST[si].groups[gi].items.push({t:text,k:kind});
+  rebuildState();renderEditor();renderAllSections();
+  document.getElementById('ed_text').value='';
+  toast('Pregunta agregada');
+}
+/* Limpia del estado las claves que ya no corresponden a ningún punto */
+function rebuildState(){
+  const valid=new Set();
+  CHECKLIST.forEach(sec=>sec.groups.forEach((g,gi)=>g.items.forEach((it,ii)=>valid.add(keyOf(sec.id,gi,ii)))));
+  Object.keys(state).forEach(k=>{if(!valid.has(k))delete state[k]});
+}
+/* ===== Reportes anteriores (demo para administradores) ===== */
+const PAST_VENUES=["LDC Maggiore","LDC Lugano","LDC Varese","Castallia Quinta","Castallia Salón","Castallia Mezanine 1"];
+const PAST_TIPOS=["Boda","XV Años","Bautizo","Comida / Cena empresarial","Graduación","Posada"];
+const PAST_CLIENTES=["Grupo Hernández","Boda Sofía & Diego","XV de Valentina","Corporativo Vértice","Familia Rosales","Bautizo Mateo","Graduación Gen. 2026","Posada Industrias del Valle"];
+const PAST_ASESORES=["Diego Lazzarotto","Sofía Méndez","Raquel Ramírez","Andrea González","Laura Torres","Fernanda López"];
+let PAST=[];
+(function(){let s=7;const r=()=>{s=(s*1103515245+12345)&0x7fffffff;return s/0x7fffffff};
+  const pk=a=>a[Math.floor(r()*a.length)];
+  for(let i=0;i<24;i++){
+    const score=55+Math.floor(r()*45);
+    const d=new Date(2026,Math.floor(r()*6),1+Math.floor(r()*27));
+    PAST.push({id:"EV-"+(1000+i),cliente:pk(PAST_CLIENTES),tipo:pk(PAST_TIPOS),venue:pk(PAST_VENUES),asesor:pk(PAST_ASESORES),date:d,score});
+  }
+  PAST.sort((a,b)=>b.date-a.date);
+})();
+function phImg(label,hue){const svg=`<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='hsl(${hue},30%,82%)'/><text x='30' y='34' font-size='9' fill='hsl(${hue},40%,38%)' text-anchor='middle' font-family='sans-serif'>${label}</text></svg>`;return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);}
+function pVerdict(s){return s>=90?'bueno':s>=70?'regular':'malo'}
+function pCol(s){return s>=90?'var(--ok)':s>=70?'var(--warn)':'var(--alarm)'}
+
+function openReportsSearch(){
+  if(currentRole!=='administrador'){toast('Solo un administrador puede ver reportes anteriores',true);return}
+  document.getElementById('rsOverlay').classList.add('show');runReportsSearch();
+}
+function closeReportsSearch(){document.getElementById('rsOverlay').classList.remove('show')}
+function runReportsSearch(){
+  const q=(document.getElementById('rsBox').value||'').trim().toLowerCase();
+  let res=PAST.filter(e=>!q || e.id.toLowerCase().includes(q) || e.cliente.toLowerCase().includes(q) || e.venue.toLowerCase().includes(q) || e.asesor.toLowerCase().includes(q) || e.tipo.toLowerCase().includes(q));
+  const box=document.getElementById('rsResults');
+  if(!res.length){box.innerHTML='<div class="empty-good" style="color:var(--ink-soft)">Sin resultados</div>';return}
+  box.innerHTML=res.map(e=>`<div class="ed-item" style="cursor:pointer" onclick="openPastReport('${e.id}')">
+    <div class="et"><b>${e.cliente}</b><br><span style="font-size:11.5px;color:var(--ink-soft)">${e.id} · ${e.date.toLocaleDateString('es-MX',{day:'2-digit',month:'short'})} · ${e.venue} · ${e.asesor}</span></div>
+    <span class="ek" style="color:#fff;background:${pCol(e.score)}">${e.score}</span>
+  </div>`).join('');
+}
+function openPastReport(id){
+  const e=PAST.find(x=>x.id===id);if(!e)return;
+  let s=0;for(let i=0;i<e.id.length;i++)s+=e.id.charCodeAt(i);const r=()=>{s=(s*1103515245+12345)&0x7fffffff;return s/0x7fffffff};
+  const gb=e.score/100;
+  const secciones=[
+    {n:"Infraestructura",pts:[["Estacionamiento — Limpieza","q"],["Jardines — Recién cortados","yn"],["Baño Hombres — Sanitarios","q"],["Venue — Vidrios limpios","q"],["Venue — Extintores","c"]]},
+    {n:"Evento",pts:[["Montaje coincide con layout","yn"],["Calidad mobiliario — mesas","q"],["Meseros (cantidad)","c"],["Presentación meseros","q"]]},
+    {n:"Banquete",pts:[["Entrada — sabor","q"],["Plato fuerte — temperatura","q"],["Postre — presentación","q"]]},
+  ];
+  let body='';
+  secciones.forEach((sec,si)=>{
+    body+=`<div style="font-family:var(--sans);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:700;border-bottom:1px solid var(--line);padding-bottom:6px;margin:18px 0 8px">${sec.n}</div>`;
+    sec.pts.forEach(p=>{
+      let ans,cls,photos=[];
+      if(p[1]==='q'){const x=r();ans=x<gb?'Buena':x<gb+0.18?'Regular':'Mala';cls=ans==='Buena'?'ok':ans==='Regular'?'warn':'bad';photos=[phImg(ans,si*70)]}
+      else if(p[1]==='yn'){const ok=r()<gb+0.1;ans=ok?'Sí':'No';cls=ok?'ok':'bad';photos=[phImg(ans,si*70+30)]}
+      else if(p[1]==='c'){const c=2+Math.floor(r()*8);ans=c+' unidades';cls='na';photos=p[0].includes('Extintores')?[phImg('Ext 1',12),phImg('Ext 2',12)]:[]}
+      const dotcol=cls==='ok'?'var(--ok)':cls==='warn'?'var(--warn)':cls==='bad'?'var(--alarm)':'var(--ink-soft)';
+      body+=`<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #f0f0f1"><span style="width:9px;height:9px;border-radius:50%;background:${dotcol};margin-top:5px;flex-shrink:0"></span><div style="flex:1"><div style="font-size:13.5px">${p[0]}</div><div style="font-size:12px;color:var(--ink-soft)">${ans}</div>${photos.length?`<div style="display:flex;gap:6px;margin-top:6px">${photos.map(src=>`<img src="${src}" style="width:54px;height:54px;border-radius:7px;border:1px solid var(--line)">`).join('')}</div>`:''}</div></div>`;
+    });
+  });
+  document.getElementById('rfSheet').innerHTML=`<div class="grab"></div>
+    <div class="rep-head">
+      <p class="eyebrow" style="color:var(--gold)">Reporte de evento</p>
+      <h2>${e.cliente}</h2>
+      <div class="rep-sub">${e.id} · ${e.date.toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'})} · ${e.tipo} · ${e.venue}</div>
+    </div>
+    <div class="rep-body">
+      <div style="text-align:center;margin-bottom:8px"><div style="font-family:var(--sans);font-size:46px;color:${pCol(e.score)};line-height:1">${e.score}<span style="font-size:16px;color:var(--ink-soft)">/100</span></div><div class="verdict ${pVerdict(e.score)}" style="margin-top:6px">${pVerdict(e.score)}</div></div>
+      <button onclick="window.print()" style="width:100%;background:var(--gold);color:#fff;border:none;border-radius:10px;padding:12px;font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer;margin:10px 0">Descargar PDF</button>
+      <div style="font-size:11.5px;color:var(--ink-soft);font-style:italic;background:var(--gold-soft);border-radius:9px;padding:10px 12px;margin-bottom:6px">En el sistema real, al guardar el reporte se envía automáticamente en PDF a las direcciones de correo configuradas.</div>
+      ${body}
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-soft);text-align:center">Reporte elaborado por ${e.asesor} · Fotos de ejemplo en esta demostración.</div>
+    </div>`;
+  document.getElementById('rfOverlay').classList.add('show');
+}
+function closeFullReport(){document.getElementById('rfOverlay').classList.remove('show')}
+
+let currentUser=null, currentRole='coordinador';
+function doLogin(){
+  const u=document.getElementById('l_user').value.trim();const p=document.getElementById('l_pass').value;
+  if(!u||!p){toast('Escribe usuario y contraseña',true);return}
+  currentUser=u;currentRole=document.getElementById('l_rol').value;
+  document.getElementById('whoami').textContent='Sesión: '+u+' · '+(currentRole==='administrador'?'Administrador':'Coordinador');
+  // el editor de preguntas solo está disponible para administradores
+  document.getElementById('editFab').style.display = currentRole==='administrador' ? 'flex' : 'none';
+  document.getElementById('reportsFab').style.display = currentRole==='administrador' ? 'flex' : 'none';
+  document.getElementById('login').classList.add('hide');
+}
+document.getElementById('l_pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+
+/* ===== Reporte ===== */
+function statusMeta(s){
+  if(s.status==='ok')return{label:'OK',cls:'ok'};
+  if(s.status==='good')return{label:'Buena',cls:'ok'};
+  if(s.status==='reg')return{label:'Regular',cls:'warn'};
+  if(s.status==='bad')return{label:'Problema',cls:'bad'};
+  if(s.status==='mala')return{label:'Mala',cls:'bad'};
+  if(s.status==='na')return{label:'N/A',cls:'na'};
+  if(s.status==='filled')return{label:s.value,cls:'ok'};
+  return{label:'Pendiente',cls:'pend'};
+}
+/* ===== Calificación =====
+   Sí/Buena=100 · Regular=50 · Mala/No=0 · N/A no cuenta.
+   count/text/time/filled: informativos, no puntúan.
+   Umbrales evento: >=90 bueno · 70-89 regular · <70 malo
+*/
+function scoreOf(s){
+  if(s.status==='ok'||s.status==='good')return 100;
+  if(s.status==='reg')return 50;
+  if(s.status==='bad'||s.status==='mala')return 0;
+  return null; // na, filled, pendiente -> no puntúa
+}
+function verdict(p){if(p>=90)return{w:'bueno',l:'Evento bueno'};if(p>=70)return{w:'regular',l:'Evento regular'};return{w:'malo',l:'Evento malo'}}
+function scoreColor(p){if(p>=90)return'var(--ok)';if(p>=70)return'var(--warn)';return'var(--alarm)'}
+
+function openReport(){
+  const g=id=>document.getElementById(id).value;
+  const cliente=g('f_cliente')||'(Sin nombre de cliente)';
+  document.getElementById('repClient').textContent=cliente;
+  const tipoVal = g('f_tipo')==='Otro' ? (g('f_tipo_otro')||'Otro') : g('f_tipo');
+  const meta=[g('f_noevento'),g('f_fecha'),tipoVal,g('f_pax')?g('f_pax')+' pers.':'',g('f_loc'),g('f_asesor')?'Asesor: '+g('f_asesor'):''].filter(Boolean).join(' · ');
+  document.getElementById('repMeta').textContent=meta||'Captura la información del evento arriba';
+
+  let total=0,ok=0,issues=0,pend=0;
+  let scoreSum=0,scoreCount=0;
+  let surveySum=0,surveyCount=0; let hasSurvey=false, surveyData=null, surveyComment='', surveyIssues=[];
+  const secScores=[];const problems=[],timeline=[],gallery=[],issuesDetail=[];
+  let hasComplaint=false, complaintData=null;
+  CHECKLIST.forEach(sec=>{
+    if(!isActive(sec))return;
+    // La sección de queja no puntúa por puntos: penaliza el global y se reporta aparte
+    if(sec.complaint){
+      hasComplaint=true;
+      const gd=sec.groups[0];
+      complaintData={
+        nombre: state[keyOf(sec.id,0,0)]?.value||'(sin nombre)',
+        rol: state[keyOf(sec.id,0,1)]?.value||'(sin rol)',
+        tipo: (()=>{const t=state[keyOf(sec.id,0,2)];return t? (t.value==='Otro'&&t.other?('Otro: '+t.other):t.value):'(sin tipo)'})(),
+        desc: state[keyOf(sec.id,0,3)]?.value||'(sin descripción)'
+      };
+      const ts0=state[keyOf(sec.id,0,1)]?.ts || state[keyOf(sec.id,0,0)]?.ts;
+      if(ts0)timeline.push({where:'Queja de cliente reportada',cls:'bad',label:complaintData.tipo,ts:ts0});
+      // fotos de cualquier punto de la queja
+      sec.groups.forEach((grp,gi)=>grp.items.forEach((it,ii)=>{
+        const s=state[keyOf(sec.id,gi,ii)];
+        if(s&&s.photos&&s.photos.length)gallery.push({seccion:sec.title,grupo:grp.name,punto:it.t,label:'Queja',cls:'bad',ts:s.ts,photos:s.photos.slice()});
+      }));
+      return;
+    }
+    // La encuesta de satisfacción puntúa aparte (peso 30%) y escala Mala/Regular
+    if(sec.survey){
+      hasSurvey=true;
+      sec.groups.forEach((grp,gi)=>grp.items.forEach((it,ii)=>{
+        const s=state[keyOf(sec.id,gi,ii)];
+        if(it.k==='text'){ if(s&&s.value) surveyComment=s.value; return; }
+        const sv=scoreOf(s);
+        if(sv!==null){surveySum+=sv;surveyCount++;}
+        const m=statusMeta(s);
+        if(s.status==='reg'||s.status==='mala'){
+          surveyIssues.push({punto:it.t,label:m.label,cls:m.cls,ts:s.ts});
+          issuesDetail.push({seccion:sec.title,grupo:grp.name,punto:it.t,label:m.label,cls:m.cls,issue:s.issue,ts:s.ts,photos:[]});
+        }
+        if(s&&s.ts)timeline.push({where:`Encuesta · ${it.t}`,cls:m.cls,label:m.label,ts:s.ts});
+      }));
+      surveyData={sum:surveySum,count:surveyCount};
+      return;
+    }
+    let ss=0,sc=0;
+    sec.groups.forEach((grp,gi)=>grp.items.forEach((it,ii)=>{
+      const s=state[keyOf(sec.id,gi,ii)];total++;
+      const m=statusMeta(s);
+      if(s.status==='ok'||s.status==='good'||s.status==='filled')ok++;
+      else if(s.status==='bad'||s.status==='mala')issues++;
+      else if(!s.status)pend++;
+      const sv=scoreOf(s);
+      if(sv!==null){scoreSum+=sv;scoreCount++;ss+=sv;sc++}
+      if(s.status==='bad'||s.status==='mala')problems.push({where:`${sec.title} · ${grp.name} · ${it.t}`,issue:s.issue,ts:s.ts,photos:s.photos.length});
+      if(s.status==='bad'||s.status==='mala'||s.status==='reg'){
+        issuesDetail.push({seccion:sec.title,grupo:grp.name,punto:it.t,label:m.label,cls:m.cls,issue:s.issue,ts:s.ts,photos:(s.photos||[]).slice()});
+      }
+      if(s.ts)timeline.push({where:`${grp.name} · ${it.t}`,cls:m.cls,label:m.label,ts:s.ts});
+      if(s.photos&&s.photos.length)gallery.push({seccion:sec.title,grupo:grp.name,punto:it.t,label:m.label,cls:m.cls,ts:s.ts,photos:s.photos.slice()});
+    }));
+    if(sc>0)secScores.push({name:sec.title,pct:Math.round(ss/sc)});
+  });
+  timeline.sort((a,b)=>new Date(a.ts)-new Date(b.ts));
+  const inspPct = scoreCount>0?(scoreSum/scoreCount):null;
+  const survPct = surveyCount>0?(surveySum/surveyCount):null;
+  let globalPct;
+  if(inspPct!==null && survPct!==null){
+    // 70% inspección + 30% encuesta del cliente
+    globalPct=Math.round(inspPct*0.7 + survPct*0.3);
+  } else if(survPct!==null){
+    globalPct=Math.round(survPct);
+  } else {
+    globalPct=inspPct!==null?Math.round(inspPct):0;
+  }
+  if(survPct!==null)secScores.push({name:'Encuesta de satisfacción (cliente)',pct:Math.round(survPct)});
+  const COMPLAINT_PENALTY=20;
+  if(hasComplaint){globalPct=Math.max(0,globalPct-COMPLAINT_PENALTY);issues++}
+  if(surveyIssues.length){issues+=surveyIssues.length}
+  const v=verdict(globalPct);const col=scoreColor(globalPct);
+  const dash=2*Math.PI*52;const off=dash*(1-globalPct/100);
+
+  // ---- Parte 1: Calificación ----
+  let p1=`<div class="score-hero">
+    <div class="score-ring">
+      <svg width="120" height="120" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="52" fill="none" stroke="#ededee" stroke-width="11"/>
+        <circle cx="60" cy="60" r="52" fill="none" stroke="${col}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${dash.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>
+      </svg>
+      <div class="num"><b style="color:${col}">${globalPct}</b><span>de 100</span></div>
+    </div>
+    <div class="verdict ${v.w}">${v.l}</div>
+  </div>`;
+  if(hasComplaint && complaintData){
+    p1+=`<div class="complaint-banner" style="margin:0 0 18px">
+      <b>⚠ Queja de cliente reportada — escalada a gerencia</b>
+      <div style="color:var(--ink);font-size:13px;margin-top:6px;line-height:1.6">
+        <b style="display:inline">Persona:</b> ${complaintData.nombre}<br>
+        <b style="display:inline">Rol:</b> ${complaintData.rol}<br>
+        <b style="display:inline">Tipo:</b> ${complaintData.tipo}<br>
+        <b style="display:inline">Descripción:</b> ${complaintData.desc}
+      </div>
+      <div style="margin-top:8px;font-size:11.5px">Notificado a: gerente del venue, gerente de operaciones, gerente de ventas y dirección comercial. Penalización de ${COMPLAINT_PENALTY} pts aplicada a la calificación.</div>
+    </div>`;
+  }
+  if(hasSurvey && survPct!==null){
+    const scol=scoreColor(Math.round(survPct));
+    p1+=`<div class="rep-section">Encuesta de satisfacción del cliente</div>
+      <div style="background:var(--gold-soft);border-radius:12px;padding:13px 15px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:13px;color:var(--ink-soft)">Calificación del cliente que contrató</span>
+          <span style="font-family:var(--sans);font-size:22px;font-weight:600;color:${scol}">${Math.round(survPct)}</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px">Pesa 30% en la calificación final del evento. La inspección pesa el 70% restante.</div>
+        ${surveyComment?`<div style="background:#fff;border-radius:9px;padding:10px 12px;margin-top:10px;font-size:13px;line-height:1.5"><b style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft)">Comentarios del cliente</b><br>${surveyComment}</div>`:''}
+        ${surveyIssues.length?`<div style="font-size:11.5px;color:var(--alarm);margin-top:8px">⚠ ${surveyIssues.length} ${surveyIssues.length===1?'aspecto':'aspectos'} en Regular/Mala — escalado a gerencia de venue, operaciones, ventas y dirección comercial.</div>`:''}
+      </div>`;
+  }
+  p1+=`<div class="rep-section">Calificación por sección</div><div class="sec-scores">`;
+  if(!secScores.length)p1+=`<div class="empty-good" style="color:var(--ink-soft)">Aún no hay puntos calificables marcados</div>`;
+  secScores.forEach(s=>{p1+=`<div class="secscore"><div class="nm">${s.name}</div><div class="track"><i style="width:${s.pct}%;background:${scoreColor(s.pct)}"></i></div><div class="pct" style="color:${scoreColor(s.pct)}">${s.pct}</div></div>`});
+  p1+=`</div>`;
+  p1+=`<div class="rep-section">Resumen</div>
+    <div class="stat-row">
+      <div class="stat ok"><div class="n">${ok}</div><div class="l">Correctos</div></div>
+      <div class="stat bad"><div class="n">${issues}</div><div class="l">No conformidades</div></div>
+      <div class="stat pend"><div class="n">${pend}</div><div class="l">Pendientes</div></div>
+    </div>`;
+  // ---- Comprobante / PDF ----
+  const incompleto = pend>0;
+  p1+=`<div class="rep-section">Comprobante de coordinación</div>`;
+  if(incompleto){
+    p1+=`<div style="background:var(--warn-soft);border:1px solid transparent;border-radius:10px;padding:11px 13px;font-family:var(--sans);font-size:12.5px;color:var(--warn);line-height:1.5;margin-bottom:10px"><b>Reporte incompleto:</b> quedan ${pend} ${pend===1?'punto pendiente':'puntos pendientes'} por revisar. Puedes generarlo igual, pero quedará marcado como incompleto.</div>`;
+  } else {
+    p1+=`<div style="background:var(--ok-soft);border:1px solid transparent;border-radius:10px;padding:11px 13px;font-family:var(--sans);font-size:12.5px;color:var(--ok);line-height:1.5;margin-bottom:10px"><b>Reporte completo.</b> Listo para usarse como comprobante de la coordinación de este evento.</div>`;
+  }
+  p1+=`<button class="no-print" onclick="window.print()" style="width:100%;background:var(--gold);color:#fff;border:none;border-radius:10px;padding:13px;font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer">Descargar PDF del reporte</button>`;
+  p1+=`<div style="font-family:var(--sans);font-size:11.5px;color:var(--ink-soft);font-style:italic;line-height:1.5;margin-top:10px">Al cerrar la ronda en el sistema real, este reporte se envía automáticamente en PDF al coordinador, a administración y a la gerencia del venue, y sirve como comprobante para el pago de la coordinación. ${incompleto?'Se registrará que el reporte se cerró incompleto.':''}</div>`;
+  p1+=`<div class="elaborated">Reporte elaborado por<b>${currentUser||'—'}</b></div>`;
+
+  // ---- Parte 2: Detalle ----
+  let p2=`<div class="rep-section">No conformidades con evidencia · ${issuesDetail.length}</div>`;
+  p2+=`<div style="font-family:var(--sans);font-size:12px;color:var(--ink-soft);margin-bottom:12px">Incluye los puntos marcados como No, Mala o Regular, con su descripción y fotografías.</div>`;
+  if(!issuesDetail.length)p2+=`<div class="empty-good">✓ Sin no conformidades — todos los puntos revisados salieron bien</div>`;
+  else issuesDetail.forEach(d=>{
+    const badgeColor = d.cls==='warn' ? 'var(--warn)' : 'var(--alarm)';
+    const badgeBg = d.cls==='warn' ? 'var(--warn-soft)' : 'var(--alarm-soft)';
+    p2+=`<div class="photo-report-item" style="border-left:3px solid ${badgeColor}">
+      <div class="pri-head">
+        <div class="pri-text">
+          <div class="pri-punto">${d.seccion} · ${d.grupo}</div>
+          <div class="pri-name">${d.punto} <span style="display:inline-block;font-family:var(--sans);font-size:10.5px;font-weight:700;color:#fff;background:${badgeColor};padding:1px 9px;border-radius:99px;vertical-align:middle;margin-left:4px">${d.label}</span></div>
+        </div>
+        <span class="pri-when">${d.ts?fmtShort(new Date(d.ts)):''}</span>
+      </div>
+      ${d.issue?`<div style="font-family:var(--sans);font-size:13px;background:${badgeBg};border-radius:8px;padding:9px 11px;margin-bottom:${d.photos.length?'10px':'0'};color:var(--ink)"><b style="color:${badgeColor}">Descripción:</b> ${d.issue}</div>`:''}
+      ${d.photos.length?`<div class="pri-photos">${d.photos.map(src=>`<img src="${src}" alt="evidencia">`).join('')}</div>`:'<div style="font-family:var(--sans);font-size:11.5px;color:var(--ink-soft);font-style:italic">Sin foto en este punto.</div>'}
+    </div>`;
+  });
+  p2+=`<div class="rep-section">Línea de tiempo de captura</div>`;
+  if(!timeline.length)p2+=`<div class="empty-good" style="color:var(--ink-soft)">Aún no se marca ningún punto</div>`;
+  else timeline.forEach(t=>{p2+=`<div class="rep-line"><span class="dot ${t.cls}"></span><div class="t">${t.where} <span style="color:var(--ink-soft)">— ${t.label}</span></div><span class="when">${fmtShort(new Date(t.ts))}</span></div>`});
+
+  // ---- Parte 3: Evidencia fotográfica (todas las fotos) ----
+  const totalFotos = gallery.reduce((a,g)=>a+g.photos.length,0);
+  let p3=`<div class="rep-section">Evidencia fotográfica · ${totalFotos} ${totalFotos===1?'foto':'fotos'}</div>`;
+  if(!gallery.length){
+    p3+=`<div class="empty-good" style="color:var(--ink-soft)">Aún no se han tomado fotos en esta ronda</div>`;
+  } else {
+    gallery.forEach(g=>{
+      p3+=`<div class="photo-report-item">
+        <div class="pri-head">
+          <span class="dot ${g.cls}"></span>
+          <div class="pri-text"><div class="pri-punto">${g.seccion} · ${g.grupo}</div><div class="pri-name">${g.punto} <span style="color:var(--ink-soft);font-weight:400">— ${g.label}</span></div></div>
+          <span class="pri-when">${g.ts?fmtShort(new Date(g.ts)):''}</span>
+        </div>
+        <div class="pri-photos">${g.photos.map(src=>`<img src="${src}" alt="evidencia">`).join('')}</div>
+      </div>`;
+    });
+  }
+
+  document.getElementById('repBody').innerHTML=`
+    <div class="rep-tabs">
+      <div class="rep-tab active" onclick="repTab(this,'pane1')">Calificación</div>
+      <div class="rep-tab" onclick="repTab(this,'pane2')">Detalle</div>
+      <div class="rep-tab" onclick="repTab(this,'pane3')">Fotos${totalFotos?` (${totalFotos})`:''}</div>
+    </div>
+    <div class="rep-pane active" id="pane1">${p1}</div>
+    <div class="rep-pane" id="pane2">${p2}</div>
+    <div class="rep-pane" id="pane3">${p3}</div>`;
+  document.getElementById('overlay').classList.add('show');
+}
+function repTab(el,pane){
+  document.querySelectorAll('.rep-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.rep-pane').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');document.getElementById(pane).classList.add('active');
+}
+function closeReport(){document.getElementById('overlay').classList.remove('show')}
+
+document.getElementById('f_loc').addEventListener('change',e=>{document.getElementById('venueTitle').textContent=e.target.value||'Calidad de evento en sitio'});
+function toggleTipoOtro(){
+  const v=document.getElementById('f_tipo').value;
+  document.getElementById('tipoOtroWrap').style.display = v==='Otro' ? 'block' : 'none';
+}
+</script>
+</body>
+</html>
